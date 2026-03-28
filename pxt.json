@@ -1,18 +1,12 @@
 {
-    "name": "A4_Lampadaire",
-    "description": "",
+    "name": "A4-Controle-d-acces",
+    "description": "Extension MakeCode micro:bit pour lecteur RFID 125 kHz sur shield BitMaker V2.",
     "dependencies": {
-        "core": "*",
-        "radio": "*",
-        "microphone": "*",
-        "neopixel": "github:microsoft/pxt-neopixel#v0.7.6"
+        "core": "*"
     },
     "files": [
-        "main.blocks",
         "main.ts",
-        "README.md",
-        "custom.ts",
-        "hide_neopixel.ts"
+        "README.md"
     ],
     "testFiles": [
         "test.ts"
