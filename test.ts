@@ -1,1 +1,6 @@
-// tests go here; this will not be compiled when this package is used as an extension.
+basic.forever(function () {
+    if (A4ControleAcces.cardDetectedOn(A4ControleAcces.PortPn.P1)) {
+        basic.showString(A4ControleAcces.lastReceivedCode())
+    }
+    basic.pause(50)
+})
