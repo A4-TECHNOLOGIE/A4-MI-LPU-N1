@@ -5,9 +5,9 @@
 namespace A4_Lampadaire {
 
     // -----------------------------
-    // Matériel NeoPixel (P0, 10 LED)
+    // Matériel NeoPixel (P0, 15 LED)
     // -----------------------------
-    const NB_LED = 10
+    const NB_LED = 15
     const PIN_NEOPIXEL = DigitalPin.P0
 
     // -----------------------------
@@ -214,6 +214,17 @@ namespace A4_Lampadaire {
         Magenta = 4
     }
 
+    export enum CouleurAlerte {
+        //% block="Blanc"
+        Blanc = 1,
+        //% block="Bleu"
+        Bleu = 2,
+        //% block="Vert"
+        Vert = 3,
+        //% block="Rouge"
+        Rouge = 4
+    }
+
     /**
      * Eclairage progressif (couleur) de (x1) à (x2) % en (t) s
      * Permet allumage progressif (x1<x2) ou extinction progressive (x1>x2)
@@ -268,5 +279,51 @@ namespace A4_Lampadaire {
 
         // Mémorise la puissance finale
         puissancePct = x2
+    }
+
+    /**
+     * Alerte (n) fois toutes les (t) ms en (couleur).
+     * Une alerte = allumé pendant t ms puis éteint pendant t ms.
+     */
+    //% block="Alerte $n fois toutes les $t ms en $couleur"
+    //% inlineInputMode=inline
+    //% n.min=1 n.max=100 n.defl=1
+    //% t.min=1 t.max=10000 t.defl=500
+    export function alerte(n: number, t: number, couleur: CouleurAlerte): void {
+        if (n < 1) n = 1
+        if (t < 1) t = 1
+        if (t > 10000) t = 10000
+
+        annulerEclairageEnCours()
+        const myToken = eclairageToken
+
+        let couleurAlerte = 0xFFFFFF
+        switch (couleur) {
+            case CouleurAlerte.Blanc:
+                couleurAlerte = 0xFFFFFF
+                break
+            case CouleurAlerte.Bleu:
+                couleurAlerte = 0x0000FF
+                break
+            case CouleurAlerte.Vert:
+                couleurAlerte = 0x00FF00
+                break
+            case CouleurAlerte.Rouge:
+                couleurAlerte = 0xFF0000
+                break
+        }
+
+        couleurBase = couleurAlerte
+        const s = getRuban()
+
+        for (let i = 0; i < n; i++) {
+            if (eclairageToken != myToken) return
+            s.showColor(scaleRGB(couleurAlerte, puissancePct))
+            basic.pause(t)
+
+            if (eclairageToken != myToken) return
+            s.showColor(neopixel.rgb(0, 0, 0))
+            basic.pause(t)
+        }
     }
 }
