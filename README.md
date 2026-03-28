@@ -1,24 +1,36 @@
+# A4-Contrôle d'accès
 
-> Open this page at [https://a4and.github.io/a4-lampadaire/](https://a4and.github.io/a4-lampadaire/)
+Extension MakeCode pour micro:bit permettant de lire un module RFID 125 kHz via un shield BitMaker V2.
 
-## Use as Extension
+## Blocs fournis
 
-This repository can be added as an **extension** in MakeCode.
+- `Carte RFID détectée sur (Pn)` (bloc logique en losange)
+  - Ports proposés: `P0`, `P1`, `P2`, `P15`, `P8`.
+  - Renvoie `vrai` lorsqu'un nouveau badge/carte est détecté.
+- `Dernier code reçu` (bloc ovale)
+  - Renvoie le dernier identifiant RFID capturé.
 
-* open [https://makecode.microbit.org/](https://makecode.microbit.org/)
-* click on **New Project**
-* click on **Extensions** under the gearwheel menu
-* search for **https://github.com/a4and/a4-lampadaire** and import
+## Correspondance des ports BitMaker V2
 
-## Edit this project
+- `P0`  → micro:bit `P0` (TX), `P1` (RX)
+- `P1`  → micro:bit `P1` (TX), `P2` (RX)
+- `P2`  → micro:bit `P2` (TX), `P12` (RX)
+- `P15` → micro:bit `P15` (TX), `P16` (RX)
+- `P8`  → micro:bit `P8` (TX), `P14` (RX)
 
-To edit this repository in MakeCode.
+## Exemple
 
-* open [https://makecode.microbit.org/](https://makecode.microbit.org/)
-* click on **Import** then click on **Import URL**
-* paste **https://github.com/a4and/a4-lampadaire** and click import
+```typescript
+basic.forever(function () {
+    if (A4ControleAcces.cardDetectedOn(A4ControleAcces.PortPn.P1)) {
+        basic.showString(A4ControleAcces.lastReceivedCode())
+    }
+})
+```
 
-#### Metadata (used for search, rendering)
+## Installation dans MakeCode
 
-* for PXT/microbit
-<script src="https://makecode.com/gh-pages-embed.js"></script><script>makeCodeRender("{{ site.makecode.home_url }}", "{{ site.github.owner_name }}/{{ site.github.repository_name }}");</script>
+1. Ouvrir [https://makecode.microbit.org](https://makecode.microbit.org)
+2. **Nouveau projet**
+3. **Extensions**
+4. Importer le dépôt GitHub de l'extension
