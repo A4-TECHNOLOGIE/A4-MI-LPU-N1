@@ -1,30 +1,23 @@
-# A4-Contrôle d'accès
+# A4_Tem_Hum_SHT31
 
-Extension MakeCode pour micro:bit permettant de lire un module RFID 125 kHz via un shield BitMaker V2.
+Extension MakeCode pour micro:bit permettant de lire le capteur **Grove - Temperature & Humidity Sensor (SHT31)** sur le bus **I2C**.
 
-## Blocs fournis
+## Bloc fourni
 
-- `Carte RFID détectée sur (Pn)` (bloc logique en losange)
-  - Ports proposés: `P0`, `P1`, `P2`, `P15`, `P8`.
-  - Renvoie `vrai` lorsqu'un nouveau badge/carte est détecté.
-- `Dernier code reçu` (bloc ovale)
-  - Renvoie le dernier identifiant RFID capturé.
-
-## Correspondance des ports BitMaker V2
-
-- `P0`  → micro:bit `P0` (TX), `P1` (RX)
-- `P1`  → micro:bit `P1` (TX), `P2` (RX)
-- `P2`  → micro:bit `P2` (TX), `P12` (RX)
-- `P15` → micro:bit `P15` (TX), `P16` (RX)
-- `P8`  → micro:bit `P8` (TX), `P14` (RX)
+- `lire (Température/Humidité) sur port I2C` (bloc ovale)
+  - `Température` : renvoie la température en °C.
+  - `Humidité` : renvoie l'humidité relative en %RH.
 
 ## Exemple
 
 ```typescript
 basic.forever(function () {
-    if (A4ControleAcces.cardDetectedOn(A4ControleAcces.PortPn.P1)) {
-        basic.showString(A4ControleAcces.lastReceivedCode())
-    }
+    let temperature = A4TemHumSHT31.lireMesure(A4TemHumSHT31.MesureSHT31.Temperature)
+    let humidite = A4TemHumSHT31.lireMesure(A4TemHumSHT31.MesureSHT31.Humidity)
+
+    basic.showString("T:" + temperature)
+    basic.showString("H:" + humidite)
+    basic.pause(1000)
 })
 ```
 
