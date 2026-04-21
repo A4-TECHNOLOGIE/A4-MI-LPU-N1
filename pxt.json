@@ -1,6 +1,6 @@
 {
-    "name": "A4-Controle-d-acces",
-    "description": "Extension MakeCode micro:bit pour lecteur RFID 125 kHz sur shield BitMaker V2.",
+    "name": "A4_Tem_Hum_SHT31",
+    "description": "Extension MakeCode micro:bit pour le capteur Grove Temperature & Humidity Sensor (SHT31) en I2C.",
     "dependencies": {
         "core": "*"
     },

@@ -1,151 +1,76 @@
 /**
- * A4-Contrôle d'accès
- * Extension MakeCode pour lecteur RFID 125 kHz.
+ * A4_Tem_Hum_SHT31
+ * Extension MakeCode pour Grove - Temperature & Humidity Sensor (SHT31).
  */
 
-namespace A4ControleAcces {
-    const BAUD_RATE = 9600
-    const MAX_BUFFER_LENGTH = 96
-
-    let currentPort: PortPn = PortPn.P0
-    let serialConfigured = false
-    let rxBuffer = ""
-    let pendingDetected = false
-    let _lastCode = ""
+namespace A4TemHumSHT31 {
+    const SHT31_ADDRESS = 0x44
+    const CMD_MEASURE_HIGH_REP_STRETCH_DISABLED = 0x2400
 
     /**
-     * Ports BitMaker V2 disponibles pour le lecteur RFID.
+     * Valeur à mesurer sur le capteur SHT31.
      */
-    export enum PortPn {
-        //% block="P0"
-        P0 = 0,
-        //% block="P1"
-        P1 = 1,
-        //% block="P2"
-        P2 = 2,
-        //% block="P15"
-        P15 = 3,
-        //% block="P8"
-        P8 = 4
+    export enum MesureSHT31 {
+        //% block="Température"
+        Temperature = 0,
+        //% block="Humidité"
+        Humidity = 1
     }
 
-    function pinsForPort(port: PortPn): SerialPins {
-        switch (port) {
-            case PortPn.P0:
-                return { tx: SerialPin.P0, rx: SerialPin.P1 }
-            case PortPn.P1:
-                return { tx: SerialPin.P1, rx: SerialPin.P2 }
-            case PortPn.P2:
-                return { tx: SerialPin.P2, rx: SerialPin.P12 }
-            case PortPn.P15:
-                return { tx: SerialPin.P15, rx: SerialPin.P16 }
-            case PortPn.P8:
-                return { tx: SerialPin.P8, rx: SerialPin.P14 }
-            default:
-                return { tx: SerialPin.P0, rx: SerialPin.P1 }
-        }
-    }
-
-    function isHexChar(charCode: number): boolean {
-        return (charCode >= 48 && charCode <= 57) || (charCode >= 65 && charCode <= 70) || (charCode >= 97 && charCode <= 102)
-    }
-
-    function normalizeHex(hex: string): string {
-        let result = ""
-        for (let i = 0; i < hex.length; i++) {
-            const code = hex.charCodeAt(i)
-            if (code >= 97 && code <= 102) {
-                result += String.fromCharCode(code - 32)
-            } else {
-                result += hex.charAt(i)
-            }
-        }
-        return result
-    }
-
-    function trimBuffer(): void {
-        if (rxBuffer.length > MAX_BUFFER_LENGTH) {
-            rxBuffer = rxBuffer.substr(rxBuffer.length - MAX_BUFFER_LENGTH)
-        }
-    }
-
-    function extractTagFromBuffer(): string {
-        for (let start = 0; start + 10 <= rxBuffer.length; start++) {
-            let allHex = true
-            for (let i = 0; i < 10; i++) {
-                if (!isHexChar(rxBuffer.charCodeAt(start + i))) {
-                    allHex = false
-                    break
+    function crc8(data: Buffer, offset: number): number {
+        let crc = 0xFF
+        for (let i = 0; i < 2; i++) {
+            crc ^= data[offset + i]
+            for (let b = 0; b < 8; b++) {
+                if ((crc & 0x80) != 0) {
+                    crc = ((crc << 1) ^ 0x31) & 0xFF
+                } else {
+                    crc = (crc << 1) & 0xFF
                 }
             }
-
-            if (allHex) {
-                const tag = normalizeHex(rxBuffer.substr(start, 10))
-                rxBuffer = rxBuffer.substr(start + 10)
-                return tag
-            }
         }
-
-        if (rxBuffer.length > 10) {
-            rxBuffer = rxBuffer.substr(rxBuffer.length - 10)
-        }
-
-        return ""
+        return crc
     }
 
-    interface SerialPins {
-        tx: SerialPin
-        rx: SerialPin
-    }
+    function readRawMeasurement(): Buffer {
+        const command = pins.createBuffer(2)
+        command[0] = (CMD_MEASURE_HIGH_REP_STRETCH_DISABLED >> 8) & 0xFF
+        command[1] = CMD_MEASURE_HIGH_REP_STRETCH_DISABLED & 0xFF
 
-    function configureSerialIfNeeded(port: PortPn): void {
-        if (!serialConfigured || currentPort !== port) {
-            const pins = pinsForPort(port)
-            serial.redirect(pins.tx, pins.rx, BAUD_RATE)
-            serial.setRxBufferSize(128)
-            currentPort = port
-            serialConfigured = true
-            rxBuffer = ""
-            pendingDetected = false
-        }
-    }
+        pins.i2cWriteBuffer(SHT31_ADDRESS, command, false)
+        basic.pause(20)
 
-    function pollTag(port: PortPn): void {
-        configureSerialIfNeeded(port)
-        const chunk = serial.readString()
-        if (chunk.length > 0) {
-            rxBuffer += chunk
-            trimBuffer()
-            const tag = extractTagFromBuffer()
-            if (tag.length > 0) {
-                _lastCode = tag
-                pendingDetected = true
-            }
+        const response = pins.i2cReadBuffer(SHT31_ADDRESS, 6, false)
+
+        const tempCrcOk = response.length >= 3 && crc8(response, 0) == response[2]
+        const humCrcOk = response.length >= 6 && crc8(response, 3) == response[5]
+        if (!tempCrcOk || !humCrcOk) {
+            return pins.createBuffer(0)
         }
+
+        return response
     }
 
     /**
-     * Renvoie vrai lorsqu'une nouvelle carte RFID est détectée sur le port choisi.
+     * Lit la température ou l'humidité du capteur SHT31 connecté en I2C.
      */
-    //% block="Carte RFID détectée sur %port"
-    //% blockId=a4_ctrl_access_card_detected
-    //% group="RFID"
-    export function cardDetectedOn(port: PortPn): boolean {
-        pollTag(port)
-        if (pendingDetected) {
-            pendingDetected = false
-            return true
+    //% block="lire %mesure sur port I2C"
+    //% blockId=a4_tem_hum_sht31_read
+    //% group="SHT31"
+    //% mesure.defl=MesureSHT31.Temperature
+    export function lireMesure(mesure: MesureSHT31): number {
+        const data = readRawMeasurement()
+        if (data.length < 6) {
+            return 0
         }
-        return false
-    }
 
-    /**
-     * Renvoie le dernier code de badge/carte RFID reçu.
-     */
-    //% block="Dernier code reçu"
-    //% blockId=a4_ctrl_access_last_code
-    //% group="RFID"
-    export function lastReceivedCode(): string {
-        return _lastCode
+        const rawTemp = (data[0] << 8) | data[1]
+        const rawHum = (data[3] << 8) | data[4]
+
+        if (mesure == MesureSHT31.Temperature) {
+            return -45 + (175 * rawTemp) / 65535
+        }
+
+        return (100 * rawHum) / 65535
     }
 }
